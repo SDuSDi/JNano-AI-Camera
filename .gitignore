@@ -1,0 +1,9 @@
+.ipynb_checkpoints
+
+models
+
+ImageNet1k
+Small-ImageNet1k
+
+src/imagenet_1k/train
+src/imagenet_1k/val
