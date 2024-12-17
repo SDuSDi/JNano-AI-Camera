@@ -1,0 +1,3 @@
+ImageNet1k: https://www.kaggle.com/datasets/vitaliykinakh/stable-imagenet1k
+
+Small-ImageNet1k: https://github.com/ndb796/Small-ImageNet-Validation-Dataset-1000-Classes
