@@ -36,7 +36,8 @@ if __name__ == '__main__':
         old = open(path + 'gstCamera.cpp.old','x')
         command = 'cp ' + file_path + ' ' + path + 'gstCamera.cpp.old'
         print('Creating savefile with command "' + command + '"')
-        #run(command, shell=True, executable="/bin/bash")
+        # run(command, shell=True, executable="/bin/bash")
+        run(['cp',file_path,path+'gstCamera.cpp.old'])
     except:
         print('Savefile already exists. Avoiding overwrite...')
         
@@ -51,8 +52,7 @@ if __name__ == '__main__':
     with open(file_path,'r') as f:
         w = open(path + 'tmp.cpp','a')
         for i, line in enumerate(f):
-            if i == 160: # or i == 144:
-                # print(line)
+            if line[0:36] == '		ss << "nvarguscamerasrc sensor-id=':
                 w.write('		ss << "nvarguscamerasrc sensor-id=" << mOptions.resource.port << " saturation=' + str(args.saturation) + ' wbmode=' + str(args.wbmode) + ' exposuretimerange=' + str(args.exposuretimerange) + ' gainrange=' + str(args.gainrange) + ' ispdigitalgainrange=' + str(args.ispdigitalgainrange) + ' exposurecompensation=' + str(args.exposurecompensation) + ' aelock=' + str(args.aelock) + ' awblock=' + str(args.awblock) + ' ! video/x-raw(memory:NVMM), width=' + str(args.width) + ', height=' + str(args.height) + ', framerate=' + str(args.framerate) + '/1, format=(string)NV12 ! nvvidconv ! videobalance contrast=' + str(args.contrast) + ' brightness=' + str(args.brightness) + ' ! nvvidconv flip-method=" << mOptions.flipMethod << " ! ";\n')
 
             else:
@@ -60,9 +60,9 @@ if __name__ == '__main__':
                 
     print('Replacing camera config file with new config')
     command = 'mv ' + path + 'tmp.cpp ' + file_path
-    run(command, shell=True, executable="/bin/bash")
-    # run(['mv','tmp.cpp','gstCamera.cpp'], shell=False, cwd='/home/' + getuser() + '/jetson-inference/utils/camera')
+    # run(command, shell=True, executable="/bin/bash")
+    run(['mv','tmp.cpp','gstCamera.cpp'], shell=False, cwd='/home/' + getuser() + '/jetson-inference/utils/camera')
     
     command = 'cmake -B /home/' + getuser() + '/jetson-inference/build -S /home/' + getuser() + '/jetson-inference'
-    run(command, shell=True, executable="/bin/bash")
-    # run(['cmake','..'], shell=False, cwd='/home/' + getuser() + '/jetson-inference/build')
+    # run(command, shell=True, executable="/bin/bash")
+    run(['cmake','..'], shell=False, cwd='/home/' + getuser() + '/jetson-inference/build')
