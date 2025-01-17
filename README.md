@@ -92,7 +92,7 @@ Introduzca esta tarjeta en la ranura de la Jetson Nano, por el lado contrario a 
 
 <p align="center" width="100%">
     <img src="assets/microsd.png">
-</p>
+</p>stru
 
 ### ADICIONAL: Formateo en Linux
 
@@ -599,7 +599,7 @@ El propósito de uso de GStreamer son sus grandes capacidades para efectuar cont
 
 ```
 # Modifies video parameters on a flipped video
-gst-launch-1.0 nvarguscamerasrc saturation=1 ! nvvidconv ! videobalance contrast=1.5 brightness=-0.3 ! nvvidconv flip-method=2 ! nvegltrasnform ! nveglglessink -e
+gst-launch-1.0 nvarguscamerasrc saturation=1 ! nvvidconv ! videobalance contrast=1.5 brightness=-0.3 ! nvvidconv flip-method=2 ! nvegltransform ! nveglglessink -e
 ```
 
 Para ello, es necesario realizar una ```nvvidconv``` antes y despues de la modificación de los parámetros de video mediante ```videobalance```. La segunda ```nvvidconv``` contiene el método de flip, mientras que la primera unicamente sirve para transformar la imagen en un formato que ```videobalance``` pueda entender. Finalmente, extraemos el video modificado por pantalla.
@@ -615,7 +615,7 @@ Si eliminamos el segundo ```nvvidconv``` y modificamos el *sink* para que acepte
 gst-launch-1.0 nvarguscamerasrc saturation=1 ! nvvidconv flip-method=2 ! videobalance contrast=1.5 brightness=-0.3 ! nvoverlaysink
 ```
 
-*Luego podeis cambiar el ```nvoverlaysink``` por ```nvvidconv ! nvegltrasnform ! nveglglessink -e``` y ver como se arregla.*
+*Luego podeis cambiar el ```nvoverlaysink``` por ```nvvidconv ! nvegltransform ! nveglglessink -e``` y ver como se arregla.*
 
 ---
 
@@ -1036,6 +1036,10 @@ Para modificar el modelo utilizado, podemos añadir la *flag* ```--network``` a 
 ```
 # Use another model to check the same image
 ./imagenet --network=alexnet images/orange_0.jpg
+
+# You may need to download the additional models. That can be done with the previously shown command.
+cd jetson-inference/tools
+./download-models.sh
 ```
 
 Una vez volvemos al directorio de ejecutables (y suponiendo que tenemos la camara conectada. Si no la teneis, apagad la Jetson Nano y conectadla), deberiamos determinar el tipo de cámara que poseemos para poder hacer inferencia sobre los datos aportados por la misma, pero para este caso, ya os indico yo que la cámara es una MIPI CSI de Raspberry Pi.
@@ -1238,63 +1242,94 @@ Algunos ejemplos de los posibles comandos a utilizar para hacer uso de este ejec
 
 ### Inferencia sobre parámetros de cámara modificados
 
-Para poder hacer uso de ambas utilidades al mismo tiempo, se ha desarrollado una serie de scripts en Python para su automatización. Estos scripts se pueden ejecutar por separado en el siguiente orden: ```camera-config.py``` para modificar los parámetros de la cámara, ```camera-build.py``` para construir y compilar los archivos del repositorio y ```camera-inference.py``` para ejecutar una red sobre la salida de la cámara. Cada uno de estos ejecutables cuenta con su serie de flags, que se muestran a continuación.
+---
+
+Para poder unificar ambas secciones, el control de los parámetros de cámara y la inferencia, se han creado una serie de programas auxiliares para ayudar a utilizar los sistemas planteados. Estos programas se tratan de 3 scripts de Python encargados de modificar los parámetros de la cámara y la inferencia, y compilarlos para su uso posterior.
+
+Estos scripts se pueden ejecutar por separado en el siguiente orden, con diferentes utilidades: ```camera-config.py``` para modificar los parámetros de la cámara, ```camera-build.py``` para construir y compilar los archivos del repositorio y ```camera-inference.py``` para ejecutar una red sobre la salida de la cámara. Cada uno de estos ejecutables cuenta con su serie de flags, que se muestran a continuación.
+
+#### Work pipeline: Camera-Config.py --> Camera-Build.py --> Camera-Inference.py
+
+El primero de estos scripts, ```camera-config.py```, se puede ejecutar de manera independiente para modificar los parámetros guardados de la cámara. Estos parámetros se guardan en un archivo de configuración de las utilidades de Nvidia, por lo que no se modifican a menos que se vuelva a ejecutar el script. La ejecución de este script se puede realizar mediante el siguiente comando: ```python3 camera-config.py``` seguido de las *flags* que considere oportunas, que se muestran a continuación. Todas estas *flags* poseen un valor predeterminado que se puede modificar mediante el uso de la *flag* (acortada/extendida) que corresponda y el argumento en el formato dado. 
+
+En caso de querer hacer una prueba simple del funcionamiento, ```python3 camera-config.py``` funciona como comando directo independiente sin necesidad de *flags*.
 
 ### - *Camera-Config flags:*
 
-```-c|--contrast argument```. Default value = 1.
+```-c|--contrast argument```. Default argument value = 1.
 
-```-b|--brightness argument``` . Default value = 0.
+```-b|--brightness argument``` . Default argument value = 0.
 
-```-s|--saturation argument``` . Default value = 1.
+```-s|--saturation argument``` . Default argument value = 1.
 
-```-wb|--wbmode argument```. Default value = 1.
+```-wb|--wbmode argument```. Default argument value = 1.
 
-```-et|--exposuretimerange "argument argument"```. Default value = "null".
+```-et|--exposuretimerange "argument argument"```. Default argument value = "null".
 
-```-gr|--gainrange "argument argument"```. Default value = "null".
+```-gr|--gainrange "argument argument"```. Default argument value = "null".
 
-```-igr|--ispdigitalgainrange "argument argument"```. Default value = "null".
+```-igr|--ispdigitalgainrange "argument argument"```. Default argument value = "null".
 
-```-ec|--exposurecompensation argument```. Default value = 0.
+```-ec|--exposurecompensation argument```. Default argument value = 0.
 
-```--aelock```. Default value = false.
+```--aelock```. Default argument value = false.
 
-```--awblock```. Default value = false.
+```--awblock```. Default argument value = false.
 
-```--width argument```. Default value = 1296.
+```--width argument```. Default argument value = 1296.
 
-```--height argument```. Default value = 730.
+```--height argument```. Default argument value = 730.
 
-```--framerate argument```. Default value = 30.
+```--framerate argument```. Default argument value = 30.
 
-```--RESET```. This flag resets the camera to original output through a savefile.
+```--RESET```. This flag resets the camera to original output through a stored savefile. No argument needed.
 
 Para más información sobre los límites de algunas de estas *flags*, leer el archivo *nvarguscamerasrc.txt* encontrado en esta carpeta.
 
+El segundo de estos scripts, ```camera-build.py```, es un script sencillo sin *flags* que se encarga de compilar y (re)buildear los archivos de configuración de Nvidia. Su ejecución es necesaria para guardar cambios realizados sobre los parámetros de la cámara y permitir así la ejecución. Su ejecución se puede realizar de manera directa mediante el comando ```python3 camera-build.py```.
+
+El tercero y último de estos scripts, ```camera-inference.py```, trata la inferencia sobre el resultado de la cámara previamente configurada. Este script mantiene una ejecución similar a las presentadas previamente, con un pequeño añadido. Debido a que este script está planteado para su uso para distintos tipos de inferencias, es necesario especificar la inferencia que queremos en ese momento. Para ello, en el comando de ejecución, ```python3 camera-inference.py job```, es necesario reemplazar el argumento ```job```, con una de las opciones disponibles: ```classification```, ```detection``` o ```segmentation```. Este argumento es obligatorio para el funcionamiento. Como *flags* adicionales, se plantean las presentes en las pruebas previamente realizadas sobre estos modos de inferencia. No todas las *flags* tienen efecto sobre todos los modos de inferencia, ya que esto dependerá de las *flags* que dicha inferencia requiera. Todas las *flags* disponibles se muestran a continuación.
+
 ### - *Camera-Inference flags:*
 
-```-m|--model argument```. Default value = None.
+```-m|--model argument```. Default argument value = None.
 
-```--overlay argument```. Default value = "'box,labels,conf'".
+```--overlay argument```. Default argument value = "'box,labels,conf'".
 
-```--alpha argument```. Default value = 120.
+```--alpha argument```. Default argument value = 120.
 
-```--threshold argument```. Default value = 0.5.
+```--threshold argument```. Default argument value = 0.5.
 
-```--visualize argument```. Default value = 'overlay'.
+```--visualize argument```. Default argument value = 'overlay'.
 
-```--filter-mode argument```. Default value = 'linear'.
+```--filter-mode argument```. Default argument value = 'linear'.
 
-Para poder ejecutarlos, puede usar la siguiente plantilla de comando: ```python3 "ejecutable.py" "--flag valor"```. Para ```camera-inference.py```, es necesario añadir una tarea a realizar. Actualmente, las tareas implementadas son ```['classification','detection','segmentation']```, y es obligatorio proveer de una para la ejecución. Dependiendo de la tarea planteada, ciertas flags de las mostradas para ```camera-inference``` carecen de uso para esa aplicación en concreto. Las flags correspondientes a cada aplicación se pueden encontrar en los apartados dedicados a cada una de ellas.
+Mas información sobre cada *flag* se puede encontrar en el apartado dedicado a cada modo de inferencia.
 
-Estos ejecutables son útiles para depurar errores o comprobar los límites de los parámetros planteados, pero su uso es engorroso para una aplicación continuada y/o repetida. Para ello, se ha desarrollado un ejecutable extra en Bash que acepte todos las flags/parámetros mostrados previamente y se encargue de invocar los tres scripts de manera ordenada y sencilla. Para aquellos que no se encuentren familiarizados con Bash, se pueden ejecutar mediante la siguiente plantilla: ```./run.sh *tarea* *--flag valor*```
+Como opción para facilitar el uso de estos 3 scripts de Python, se ha creado un cuarto ejecutable *bash* mediante el cúal se pueden ejecutar los otros 3, unificando sus ejecuciones. Para utilizarlo, solo es necesario el comando ```./run.sh job```, reemplazando el argumento ```job``` con el modo de inferencia deseado y las *flags* necesarias tanto de configuración de parámetros de cámara como de inferencia sobre la misma.
 
-Cabe destacar que el único argumento obligatorio en todo momento es la tarea a realizar, que se debe encontrar sin descriptor de flag: ```./run.sh classification```. 
+<!-- It's hard to believe that it's over, isn't it? Funny, how we get attached to the struggle. -->
 
----
+#### Ejemplos básicos:
 
-<!-- 
+```
+python3 camera-config.py -c 0.5 -et "'50000 50000'" --awblock
+```
+
+```
+python3 camera-build.py
+```
+
+```
+python3 camera-inference.py detection --threshold 0.3 --alpha 100
+```
+
+```
+./run.sh detection -c 0.5 -et "'50000 50000'" --awblock --threshold 0.3 --alpha 100
+```
+
+<!-- ---
+
 ### ONNX
 
 ---
@@ -1359,7 +1394,45 @@ pip3 install onnxruntime==1.8.0
 
 Se puede comprobar de la misma manera que se comprobo ONNX, mediante el comando ```python3``` e importandolo mediante ```import onnxruntime```. Si da el error mencionado previamente ```Illegal instruction (core dumped)```, vuelva a borrar las versiones de numpy que no sean 1.13.3 e instale la versión 1.19.4.
 
-La última libreria de utilidad para ONNX es ONNX-TensorRT, el cual es un backend de ONNX para TensorRT. Este repositorio también tiene que ser instalado mediante *source*, por lo que los comandos necesarios se muestran a continuación.
+La última libreria de utilidad para ONNX es ONNX-TensorRT, el cual es un backend de ONNX para TensorRT. Este repositorio también tiene que ser instalado mediante *source*, para lo que necesitaremos actualizar algunas herramientas presentes en la Jetson Nano. La primera de estas herramientas es ```cmake```, herramienta de compilación que se debe encontrar en la versión 1.13 o superior para su uso.
+
+```
+# Check cmake version
+cmake --version
+
+# If version is lower than 1.13, remove it
+sudo apt remove cmake
+
+# Get new cmake version in opt folder
+cd /opt
+sudo wget https://www.cmake.org/files/v3.20/cmake-3.20.0-linux-aarch64.sh
+
+# Make the downloaded bash file executable
+chmod +x cmake-3.20.0-linux-aarch64.sh
+
+# Execute the bash file (you have to input 'y' to the options twice)
+sudo bash cmake-3.20.0-linux-aarch64.sh
+
+# Make a symbolic link to make the installed binaries usable
+sudo ln -s /opt/cmake-3.20.0-linux-aarch64/bin/* /usr/local/bin
+
+# Test the result
+cmake --version
+```
+
+La segunda libreria necesaria para la instalación es PyCuda. Para su instalación, primero es necesario indicarle al sistema donde se encuentra la versión de Cuda instalada. Los comandos necesarios se encuentran a continuación.
+
+```
+# Adds folders to system PATHs and reloads .bashrc
+echo "export PATH=${PATH}:/usr/local/cuda/bin" >> ~/.bashrc
+echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda/lib64" >> ~/.bashrc
+source ~/.bashrc
+
+# Install PyCuda
+pip3 install pycuda==2018.1.1
+```
+
+Los comandos para la instalación de la libreria ONNX-TensorRT son los siguientes.
 
 ```
 # Clone specific branch from ONNX-TensorRT
@@ -1367,6 +1440,7 @@ git clone -b 8.2-GA --single-branch https://github.com/onnx/onnx-tensorrt
 
 # Create folder for compilation 
 cd onnx-tensorrt
+git submodule update --init
 mkdir build && cd build
 
 # Compile and build +the repo
@@ -1379,8 +1453,7 @@ export LD_LIBRARY_PATH=$PWD:$LD_LIBRARY_PATH
 python3 setup.py install
 ```
 
----
- -->
+--- -->
 
 ## Contact
 
